@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claims Board</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f0efe9;
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --text: #1a1a1a;
+      --text2: #666;
+      --text3: #999;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a;
+        --surface: #252525;
+        --surface2: #2e2e2e;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.18);
+        --text: #f0f0f0;
+        --text2: #aaa;
+        --text3: #666;
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+    }
+    .topbar h1 {
+      font-size: 20px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .topbar h1 span { font-size: 13px; color: var(--text2); font-weight: 400; }
+
+    .tabs {
+      display: flex; gap: 4px;
+      background: var(--surface2);
+      border-radius: var(--radius-md);
+      padding: 4px;
+    }
+    .tab {
+      padding: 7px 16px; border-radius: 6px; font-size: 13px;
+      border: none; cursor: pointer; background: transparent;
+      color: var(--text2); transition: all 0.15s; font-family: var(--font);
+    }
+    .tab.active {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      color: var(--text); font-weight: 500;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+
+    .new-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: var(--radius-md);
+      background: var(--text); border: none;
+      color: var(--bg); font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: opacity 0.15s;
+      font-family: var(--font);
+    }
+    .new-btn:hover { opacity: 0.85; }
+
+    .counter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .counter {
+      font-size: 12px; padding: 4px 10px; border-radius: 20px;
+      background: var(--surface); color: var(--text2);
+      border: 0.5px solid var(--border);
+    }
+    .counter strong { color: var(--text); }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .note {
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      border: 0.5px solid transparent;
+      position: relative;
+      min-height: 190px;
+      display: flex; flex-direction: column;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .note:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+    .note.damage  { background: #FFF3E0; border-color: #FFD08020; }
+    .note.lost    { background: #FCE4EC; border-color: #F4849020; }
+    .note.delay   { background: #E3F2FD; border-color: #90CAF920; }
+    .note.other   { background: #F3E5F5; border-color: #CE93D820; }
+    .note.archived { background: var(--surface2); opacity: 0.82; }
+
+    .note-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; margin-bottom: 10px;
+    }
+
+    .claim-badge {
+      font-size: 10px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.6px;
+    }
+    .badge-damage   { background: #FF8F00; color: #fff; }
+    .badge-lost     { background: #C2185B; color: #fff; }
+    .badge-delay    { background: #1565C0; color: #fff; }
+    .badge-other    { background: #6A1B9A; color: #fff; }
+    .badge-archived { background: #888; color: #fff; }
+
+    .note-actions { display: flex; gap: 4px; }
+    .icon-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: none; background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; transition: background 0.1s; color: #777;
+    }
+    .icon-btn:hover { background: rgba(0,0,0,0.08); color: #333; }
+    .icon-btn.del:hover { background: rgba(200,50,50,0.1); color: #c0392b; }
+
+    .note-title {
+      font-size: 14px; font-weight: 600; color: #1a1a1a;
+      margin-bottom: 4px; background: transparent;
+      border: none; outline: none; width: 100%;
+      font-family: var(--font);
+    }
+    .note-title::placeholder { color: #aaa; font-style: italic; font-weight: 400; }
+
+    .note-ref {
+      font-size: 11px; color: #888; margin-bottom: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .note-body {
+      font-size: 13px; color: #444; background: transparent;
+      border: none; outline: none; resize: none; width: 100%;
+      flex: 1; font-family: var(--font); line-height: 1.6;
+      min-height: 75px;
+    }
+    .note-body::placeholder { color: #aaa; font-style: italic; }
+
+    .note.archived .note-title,
+    .note.archived .note-body { color: var(--text2); }
+
+    .note-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 10px; padding-top: 8px;
+      border-top: 0.5px solid rgba(0,0,0,0.08);
+      font-size: 11px; color: #999;
+    }
+
+    .action-btn {
+      font-size: 11px; padding: 3px 9px; border-radius: 4px;
+      border: 0.5px solid rgba(0,0,0,0.15); background: rgba(255,255,255,0.65);
+      cursor: pointer; color: #555; font-family: var(--font);
+      transition: background 0.1s;
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.95); }
+
+    .restore-btn {
+      font-size: 11px; padding: 3px 9px; border-radius: 4px;
+      border: 0.5px solid var(--border2); background: var(--surface);
+      cursor: pointer; color: var(--text2); font-family: var(--font);
+      transition: background 0.1s;
+    }
+    .restore-btn:hover { background: var(--surface2); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      align-items: center; justify-content: center; z-index: 999;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 22px;
+      width: 100%; max-width: 340px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+    .modal label {
+      font-size: 11px; color: var(--text2); display: block;
+      margin-bottom: 4px; margin-top: 12px; text-transform: uppercase;
+      letter-spacing: 0.5px; font-weight: 500;
+    }
+    .modal input, .modal select, .modal textarea {
+      width: 100%; font-size: 13px; padding: 9px 11px;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-md);
+      background: var(--surface2);
+      color: var(--text); font-family: var(--font); outline: none;
+      transition: border-color 0.15s;
+    }
+    .modal input:focus, .modal select:focus, .modal textarea:focus {
+      border-color: rgba(0,0,0,0.35);
+    }
+    .modal textarea { resize: vertical; min-height: 90px; }
+    .modal-actions {
+      display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end;
+    }
+    .btn-cancel {
+      padding: 9px 16px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border2);
+      background: transparent; color: var(--text2);
+      font-size: 13px; cursor: pointer; font-family: var(--font);
+    }
+    .btn-create {
+      padding: 9px 20px; border-radius: var(--radius-md);
+      border: none; background: var(--text); color: var(--bg);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-family: var(--font); transition: opacity 0.15s;
+    }
+    .btn-create:hover { opacity: 0.85; }
+
+    .empty-state {
+      grid-column: 1/-1; text-align: center; padding: 50px 20px;
+      color: var(--text3); font-size: 14px;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .topbar { gap: 10px; }
+      .notes-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>Claims Board <span id="active-count"></span></h1>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('active')">Active</button>
+        <button class="tab" onclick="switchTab('archived')">Archived</button>
+      </div>
+      <button class="new-btn" id="new-btn" onclick="openModal()">+ New ticket</button>
+    </div>
+  </div>
+
+  <div class="counter-row" id="counters"></div>
+  <div class="notes-grid" id="notes-grid"></div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h2>New claim ticket</h2>
+      <label>Customer name</label>
+      <input type="text" id="m-name" placeholder="e.g. Jane Smith" />
+      <label>Claim type</label>
+      <select id="m-type">
+        <option value="damage">Damage</option>
+        <option value="lost">Lost goods</option>
+        <option value="delay">Delayed package</option>
+        <option value="other">Other</option>
+      </select>
+      <label>Ticket ID / Reference</label>
+      <input type="text" id="m-ref" placeholder="e.g. CLM-00142" />
+      <label>Notes</label>
+      <textarea id="m-notes" placeholder="Describe the issue..."></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-create" onclick="createNote()">Create ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'claims_notes_v2';
+    let currentTab = 'active';
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+    }
+    function save(notes) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); } catch {}
+    }
+
+    let notes = load();
+
+    function openModal() {
+      ['m-name','m-ref','m-notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('m-type').value = 'damage';
+      document.getElementById('modal-overlay').classList.add('open');
+      setTimeout(() => document.getElementById('m-name').focus(), 80);
+    }
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+    }
+    document.getElementById('modal-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    function createNote() {
+      const name = document.getElementById('m-name').value.trim() || 'Unnamed customer';
+      const type = document.getElementById('m-type').value;
+      const ref  = document.getElementById('m-ref').value.trim();
+      const body = document.getElementById('m-notes').value.trim();
+      const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+      notes.unshift({ id: Date.now(), name, type, ref, body, date: today, archived: false });
+      save(notes);
+      closeModal();
+      render();
+    }
+
+    function archive(id) {
+      notes = notes.map(n => n.id === id ? { ...n, archived: true } : n);
+      save(notes); render();
+    }
+    function restore(id) {
+      notes = notes.map(n => n.id === id ? { ...n, archived: false } : n);
+      save(notes); render();
+    }
+    function deleteNote(id) {
+      if (!confirm('Delete this ticket permanently?')) return;
+      notes = notes.filter(n => n.id !== id);
+      save(notes); render();
+    }
+    function updateField(id, field, val) {
+      notes = notes.map(n => n.id === id ? { ...n, [field]: val } : n);
+      save(notes);
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'active') || (i === 1 && tab === 'archived'));
+      });
+      document.getElementById('new-btn').style.display = tab === 'active' ? '' : 'none';
+      render();
+    }
+
+    const typeLabel = { damage:'Damage', lost:'Lost goods', delay:'Delay', other:'Other' };
+
+    function esc(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function render() {
+      const visible = notes.filter(n => currentTab === 'active' ? !n.archived : n.archived);
+      const active  = notes.filter(n => !n.archived);
+
+      document.getElementById('active-count').textContent =
+        currentTab === 'active'
+          ? `— ${active.length} open`
+          : `— ${notes.filter(n=>n.archived).length} archived`;
+
+      const counters = document.getElementById('counters');
+      if (currentTab === 'active') {
+        counters.innerHTML = ['damage','lost','delay','other'].map(t => {
+          const c = active.filter(n => n.type === t).length;
+          return c > 0 ? `<div class="counter"><strong>${c}</strong> ${typeLabel[t]}</div>` : '';
+        }).join('');
+      } else { counters.innerHTML = ''; }
+
+      const grid = document.getElementById('notes-grid');
+      if (!visible.length) {
+        grid.innerHTML = `<div class="empty-state">
+          <div class="empty-icon">${currentTab==='active'?'📋':'📦'}</div>
+          ${currentTab==='active'
+            ? 'No open tickets. Hit <strong>+ New ticket</strong> to get started.'
+            : 'No archived tickets yet.'}
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = visible.map(n => `
+        <div class="note ${n.archived ? 'archived' : n.type}">
+          <div class="note-header">
+            <span class="claim-badge badge-${n.archived ? 'archived' : n.type}">
+              ${n.archived ? 'Archived' : typeLabel[n.type]}
+            </span>
+            <div class="note-actions">
+              ${!n.archived ? `<button class="icon-btn" title="Mark complete" onclick="archive(${n.id})">✓</button>` : ''}
+              <button class="icon-btn del" title="Delete" onclick="deleteNote(${n.id})">✕</button>
+            </div>
+          </div>
+          <input class="note-title" value="${esc(n.name)}" placeholder="Customer name"
+            onblur="updateField(${n.id},'name',this.value)" ${n.archived?'readonly':''} />
+          ${n.ref ? `<div class="note-ref">${esc(n.ref)}</div>` : ''}
+          <textarea class="note-body" placeholder="Add notes here..." ${n.archived?'readonly':''}
+            onblur="updateField(${n.id},'body',this.value)">${esc(n.body)}</textarea>
+          <div class="note-footer">
+            <span>${n.date}</span>
+            ${!n.archived
+              ? `<button class="action-btn" onclick="archive(${n.id})">Mark complete</button>`
+              : `<button class="restore-btn" onclick="restore(${n.id})">Restore</button>`}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    render();
+  </script>
+</body>
+</html>
