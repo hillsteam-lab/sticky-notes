@@ -1,0 +1,349 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: transparent; }
+
+  .app { padding: 16px; min-height: 500px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+  }
+  .topbar h1 {
+    font-size: 18px; font-weight: 500; color: var(--color-text-primary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .topbar h1 span { font-size: 13px; color: var(--color-text-secondary); font-weight: 400; }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 4px;
+  }
+  .tab {
+    padding: 6px 14px; border-radius: 6px; font-size: 13px;
+    border: none; cursor: pointer; background: transparent;
+    color: var(--color-text-secondary); transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    color: var(--color-text-primary); font-weight: 500;
+  }
+
+  .new-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-secondary);
+    color: var(--color-text-primary); font-size: 13px;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .new-btn:hover { background: var(--color-background-secondary); }
+  .new-btn .plus { font-size: 18px; line-height: 1; color: var(--color-text-secondary); }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .note {
+    border-radius: var(--border-radius-lg);
+    padding: 14px;
+    border: 0.5px solid transparent;
+    position: relative;
+    min-height: 180px;
+    display: flex; flex-direction: column;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .note:hover { border-color: rgba(0,0,0,0.12); transform: translateY(-1px); }
+
+  .note.damage    { background: #FFF3E0; }
+  .note.lost      { background: #FCE4EC; }
+  .note.delay     { background: #E3F2FD; }
+  .note.other     { background: #F3E5F5; }
+  .note.archived  { background: var(--color-background-secondary); opacity: 0.8; }
+
+  .note-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+
+  .claim-badge {
+    font-size: 10px; font-weight: 500; padding: 3px 8px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-damage  { background: #FF8F00; color: #fff; }
+  .badge-lost    { background: #D81B60; color: #fff; }
+  .badge-delay   { background: #1565C0; color: #fff; }
+  .badge-other   { background: #6A1B9A; color: #fff; }
+  .badge-archived { background: var(--color-background-tertiary); color: var(--color-text-secondary); }
+
+  .note-actions { display: flex; gap: 4px; }
+  .icon-btn {
+    width: 26px; height: 26px; border-radius: 6px;
+    border: none; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #888; font-size: 13px; transition: background 0.1s;
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.07); color: #333; }
+
+  .note-title {
+    font-size: 14px; font-weight: 500; color: #222;
+    margin-bottom: 6px; background: transparent;
+    border: none; outline: none; width: 100%;
+    font-family: var(--font-sans);
+  }
+  .note-title::placeholder { color: #aaa; font-style: italic; }
+
+  .note-body {
+    font-size: 13px; color: #444; background: transparent;
+    border: none; outline: none; resize: none; width: 100%;
+    flex: 1; font-family: var(--font-sans); line-height: 1.6;
+    min-height: 80px;
+  }
+  .note-body::placeholder { color: #aaa; font-style: italic; }
+
+  .note-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px; padding-top: 8px;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
+    font-size: 11px; color: #888;
+  }
+
+  .complete-btn {
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    border: 0.5px solid rgba(0,0,0,0.15); background: rgba(255,255,255,0.6);
+    cursor: pointer; color: #555; font-family: var(--font-sans);
+    transition: background 0.1s;
+  }
+  .complete-btn:hover { background: rgba(255,255,255,0.9); }
+
+  .restore-btn {
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary);
+    cursor: pointer; color: var(--color-text-secondary); font-family: var(--font-sans);
+  }
+  .restore-btn:hover { color: var(--color-text-primary); }
+
+  .modal-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; border-radius: var(--border-radius-lg);
+  }
+  .modal {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 20px; width: 300px; max-width: 90vw;
+  }
+  .modal h2 { font-size: 16px; font-weight: 500; margin-bottom: 14px; color: var(--color-text-primary); }
+  .modal label { font-size: 12px; color: var(--color-text-secondary); display: block; margin-bottom: 4px; margin-top: 10px; }
+  .modal input, .modal select, .modal textarea {
+    width: 100%; font-size: 13px; padding: 8px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans); outline: none;
+  }
+  .modal textarea { resize: vertical; min-height: 80px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+  .btn-cancel {
+    padding: 8px 14px; border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent; color: var(--color-text-secondary);
+    font-size: 13px; cursor: pointer; font-family: var(--font-sans);
+  }
+  .btn-create {
+    padding: 8px 16px; border-radius: var(--border-radius-md);
+    border: none; background: #222; color: #fff;
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font-sans);
+  }
+  .btn-create:hover { background: #000; }
+
+  .empty-state {
+    grid-column: 1/-1; text-align: center; padding: 40px 20px;
+    color: var(--color-text-secondary); font-size: 14px;
+  }
+  .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+
+  .counter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .counter {
+    font-size: 12px; padding: 4px 10px; border-radius: 20px;
+    background: var(--color-background-secondary); color: var(--color-text-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+  .counter strong { color: var(--color-text-primary); }
+
+  .modal-wrap { position: relative; }
+</style>
+
+<div class="app modal-wrap" id="app">
+  <div class="topbar">
+    <h1>Claims Board <span id="active-count"></span></h1>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('active')">Active</button>
+        <button class="tab" onclick="switchTab('archived')">Archived</button>
+      </div>
+      <button class="new-btn" id="new-btn" onclick="openModal()">
+        <span class="plus">+</span> New ticket
+      </button>
+    </div>
+  </div>
+
+  <div class="counter-row" id="counters"></div>
+  <div class="notes-grid" id="notes-grid"></div>
+
+  <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:999;">
+    <div class="modal">
+      <h2>New claim ticket</h2>
+      <label>Customer name</label>
+      <input type="text" id="m-name" placeholder="e.g. Jane Smith" />
+      <label>Claim type</label>
+      <select id="m-type">
+        <option value="damage">Damage</option>
+        <option value="lost">Lost goods</option>
+        <option value="delay">Delayed package</option>
+        <option value="other">Other</option>
+      </select>
+      <label>Ticket ID / Reference</label>
+      <input type="text" id="m-ref" placeholder="e.g. CLM-00142" />
+      <label>Notes</label>
+      <textarea id="m-notes" placeholder="Describe the issue..."></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-create" onclick="createNote()">Create ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'claims_notes_v2';
+  let currentTab = 'active';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  }
+  function save(notes) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); } catch {}
+  }
+
+  let notes = load();
+  if (!notes.length) {
+    notes = [
+      { id: 1, name: 'Sarah Thompson', type: 'damage', ref: 'CLM-00101', body: 'Package arrived with crushed corner. Contents appear broken.', date: '17 Mar 2026', archived: false },
+      { id: 2, name: 'Marcus Lee', type: 'delay', ref: 'CLM-00102', body: 'Expected delivery was 14 Mar. Still not arrived. Customer very frustrated.', date: '17 Mar 2026', archived: false },
+    ];
+    save(notes);
+  }
+
+  function openModal() {
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-type').value = 'damage';
+    document.getElementById('m-ref').value = '';
+    document.getElementById('m-notes').value = '';
+    document.getElementById('modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('m-name').focus(), 50);
+  }
+  function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+  function createNote() {
+    const name = document.getElementById('m-name').value.trim() || 'Unnamed customer';
+    const type = document.getElementById('m-type').value;
+    const ref = document.getElementById('m-ref').value.trim();
+    const body = document.getElementById('m-notes').value.trim();
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const note = { id: Date.now(), name, type, ref, body, date: today, archived: false };
+    notes.unshift(note);
+    save(notes);
+    closeModal();
+    render();
+  }
+
+  function archive(id) {
+    notes = notes.map(n => n.id === id ? { ...n, archived: true } : n);
+    save(notes);
+    render();
+  }
+  function restore(id) {
+    notes = notes.map(n => n.id === id ? { ...n, archived: false } : n);
+    save(notes);
+    render();
+  }
+  function deleteNote(id) {
+    notes = notes.filter(n => n.id !== id);
+    save(notes);
+    render();
+  }
+  function updateField(id, field, val) {
+    notes = notes.map(n => n.id === id ? { ...n, [field]: val } : n);
+    save(notes);
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && tab === 'active') || (i === 1 && tab === 'archived'));
+    });
+    document.getElementById('new-btn').style.display = tab === 'active' ? '' : 'none';
+    render();
+  }
+
+  const typeLabel = { damage: 'Damage', lost: 'Lost goods', delay: 'Delay', other: 'Other' };
+
+  function render() {
+    const visible = notes.filter(n => currentTab === 'active' ? !n.archived : n.archived);
+    const active = notes.filter(n => !n.archived);
+
+    const countEl = document.getElementById('active-count');
+    countEl.textContent = currentTab === 'active' ? `— ${active.length} open` : `— ${notes.filter(n=>n.archived).length} archived`;
+
+    const ctypes = ['damage','lost','delay','other'];
+    const counters = document.getElementById('counters');
+    if (currentTab === 'active') {
+      counters.innerHTML = ctypes.map(t => {
+        const c = active.filter(n => n.type === t).length;
+        return c > 0 ? `<div class="counter"><strong>${c}</strong> ${typeLabel[t]}</div>` : '';
+      }).join('');
+    } else { counters.innerHTML = ''; }
+
+    const grid = document.getElementById('notes-grid');
+    if (!visible.length) {
+      grid.innerHTML = `<div class="empty-state"><div class="icon">${currentTab==='active'?'📋':'📦'}</div>${currentTab==='active'?'No open tickets. Create one to get started.':'No archived tickets yet.'}</div>`;
+      return;
+    }
+
+    grid.innerHTML = visible.map(n => `
+      <div class="note ${n.archived ? 'archived' : n.type}" id="note-${n.id}">
+        <div class="note-header">
+          <span class="claim-badge badge-${n.archived ? 'archived' : n.type}">${n.archived ? 'Archived' : typeLabel[n.type]}</span>
+          <div class="note-actions">
+            ${!n.archived ? `<button class="icon-btn" title="Archive" onclick="archive(${n.id})">✓</button>` : ''}
+            <button class="icon-btn" title="Delete" onclick="deleteNote(${n.id})" style="color:#c0392b">✕</button>
+          </div>
+        </div>
+        <input class="note-title" value="${esc(n.name)}" placeholder="Customer name"
+          onblur="updateField(${n.id},'name',this.value)" ${n.archived?'readonly':''} />
+        ${n.ref ? `<div style="font-size:11px;color:#888;margin-bottom:6px;font-family:var(--font-mono)">${esc(n.ref)}</div>` : ''}
+        <textarea class="note-body" placeholder="Add notes here..." ${n.archived?'readonly':''}
+          onblur="updateField(${n.id},'body',this.value)">${esc(n.body)}</textarea>
+        <div class="note-footer">
+          <span>${n.date}</span>
+          ${!n.archived
+            ? `<button class="complete-btn" onclick="archive(${n.id})">Mark complete</button>`
+            : `<button class="restore-btn" onclick="restore(${n.id})">Restore</button>`
+          }
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  render();
+</script>
